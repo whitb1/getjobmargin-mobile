@@ -1,8 +1,10 @@
 {
   "expo": {
+    "sdkVersion": "54.0.0",
     "name": "GetJobMargin",
     "slug": "getjobmargin",
     "version": "1.0.0",
+    "orientation": "portrait",
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -16,17 +18,13 @@
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
     "scheme": "getjobmargin",
+    "primaryColor": "#0A7377",
     "plugins": [
-      "expo-router",
-      [
-        "@stripe/stripe-react-native",
-        {
-          "merchantIdentifier": "merchant.getjobmargin"
-        }
-      ]
+      "expo-router"
     ],
     "extra": {
       "router": {
