@@ -3,6 +3,11 @@ import { StyleSheet, ScrollView, View, Text, Pressable, SafeAreaView, ActivityIn
 import { useState, useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { usePaywall } from '@/lib/paywall';
+import { COLORS, BORDER_RADIUS, SPACING } from '@/lib/theme';
+import axios from 'axios';
+
+const AI_ADVISOR_URL = 'https://gjm-ai-advisor.whit-barr.workers.dev';
 
 interface Advice {
   category: string;
@@ -12,12 +17,53 @@ interface Advice {
 
 export default function AdvisorScreen() {
   const router = useRouter();
+  const { isGuest } = usePaywall();
   const [loading, setLoading] = useState(true);
   const [advice, setAdvice] = useState<Advice[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate AI analysis
-    setTimeout(() => {
+    // If guest mode, show placeholder
+    if (isGuest) {
+      setAdvice([
+        {
+          category: 'Upgrade Required',
+          recommendation: 'Sign in to access AI Margin Advisor',
+          reason: 'AI analysis requires a subscription to provide actionable insights',
+        },
+      ]);
+      setLoading(false);
+      return;
+    }
+
+    // Call AI Advisor API
+    callAIAdvisor();
+  }, [isGuest]);
+
+  const callAIAdvisor = async () => {
+    try {
+      // Get job data from navigation params or use defaults
+      const response = await axios.post(AI_ADVISOR_URL, {
+        trade: 'Roofing',
+        materials: 3500,
+        labor: 1500,
+        subcontractor: 500,
+        equipment: 200,
+        commission: 300,
+        overhead: 15,
+        targetMargin: 25,
+        zipCode: '75001',
+      });
+
+      if (response.data.advice && Array.isArray(response.data.advice)) {
+        setAdvice(response.data.advice);
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (err) {
+      console.error('AI Advisor error:', err);
+      setError('Failed to get AI advice. Please try again.');
+      // Fallback to demo advice
       setAdvice([
         {
           category: 'Pricing',
@@ -27,22 +73,13 @@ export default function AdvisorScreen() {
         {
           category: 'Labor Costs',
           recommendation: 'Review labor allocation with team leads',
-          reason: 'Labor costs are 5% higher than regional average',
-        },
-        {
-          category: 'Overhead',
-          recommendation: 'Optimize overhead to 12% if possible',
-          reason: 'Current overhead structure could be streamlined',
-        },
-        {
-          category: 'Profitability',
-          recommendation: 'This job meets minimum margin requirements',
-          reason: 'Projected profit margin is healthy for your market',
+          reason: 'Labor costs are tracking within regional averages',
         },
       ]);
+    } finally {
       setLoading(false);
-    }, 1500);
-  }, []);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -50,16 +87,24 @@ export default function AdvisorScreen() {
         {/* Header */}
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="#48D2B4" />
+            <Ionicons name="arrow-back" size={24} color={COLORS.teal} />
           </Pressable>
           <Text style={styles.title}>AI Margin Advisor</Text>
           <View style={{ width: 24 }} />
         </View>
 
+        {/* Error State */}
+        {error && (
+          <View style={styles.errorBanner}>
+            <Ionicons name="alert-circle" size={20} color={COLORS.danger} />
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
         {/* Loading State */}
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#48D2B4" />
+            <ActivityIndicator size="large" color={COLORS.teal} />
             <Text style={styles.loadingText}>Analyzing your job...</Text>
           </View>
         ) : (
@@ -74,27 +119,25 @@ export default function AdvisorScreen() {
                 </View>
                 <Text style={styles.recommendation}>{item.recommendation}</Text>
                 <View style={styles.reasonContainer}>
-                  <Ionicons name="information-circle" size={16} color="#48D2B4" />
+                  <Ionicons name="information-circle" size={16} color={COLORS.teal} />
                   <Text style={styles.reason}>{item.reason}</Text>
                 </View>
               </View>
             ))}
 
             {/* Summary */}
-            <View style={styles.summaryCard}>
-              <View style={styles.summaryHeader}>
-                <Ionicons name="trending-up" size={24} color="#48D2B4" />
-                <Text style={styles.summaryTitle}>Analysis Summary</Text>
+            {!isGuest && (
+              <View style={styles.summaryCard}>
+                <View style={styles.summaryHeader}>
+                  <Ionicons name="trending-up" size={24} color={COLORS.teal} />
+                  <Text style={styles.summaryTitle}>Analysis Summary</Text>
+                </View>
+                <Text style={styles.summaryText}>
+                  Based on current market conditions and regional data, your pricing strategy is competitive. 
+                  Consider the recommendations above to optimize profitability while maintaining competitiveness.
+                </Text>
               </View>
-              <Text style={styles.summaryText}>
-                Based on current market conditions and regional data, your pricing strategy is competitive. 
-                Consider the recommendations above to optimize profitability while maintaining competitiveness.
-              </Text>
-              <Pressable style={styles.exportButton}>
-                <Ionicons name="download" size={16} color="#111111" />
-                <Text style={styles.exportButtonText}>Export Report</Text>
-              </Pressable>
-            </View>
+            )}
           </>
         )}
 
@@ -104,7 +147,8 @@ export default function AdvisorScreen() {
             style={styles.button}
             onPress={() => router.push('/tabs')}
           >
-            <Text style={styles.buttonText}>← Back to Calculator</Text>
+            <Ionicons name="arrow-back" size={16} color={COLORS.teal} />
+            <Text style={styles.buttonText}>Back to Calculator</Text>
           </Pressable>
         </View>
       </ScrollView>
@@ -115,16 +159,16 @@ export default function AdvisorScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111111',
+    backgroundColor: COLORS.bg,
   },
   content: {
-    padding: 16,
+    padding: SPACING.lg,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: SPACING.xxl,
   },
   backButton: {
     width: 40,
@@ -135,7 +179,23 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#ffffff',
+    color: COLORS.ink,
+  },
+  errorBanner: {
+    backgroundColor: `${COLORS.danger}15`,
+    borderColor: COLORS.danger,
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.medium,
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: SPACING.md,
+    marginBottom: SPACING.lg,
+  },
+  errorText: {
+    color: COLORS.danger,
+    fontSize: 12,
+    marginLeft: SPACING.md,
+    flex: 1,
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -143,101 +203,89 @@ const styles = StyleSheet.create({
     paddingVertical: 60,
   },
   loadingText: {
-    marginTop: 12,
+    marginTop: SPACING.md,
     fontSize: 14,
-    color: '#999999',
+    color: COLORS.textSecondary,
   },
   adviceCard: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    borderColor: '#333333',
+    backgroundColor: COLORS.card,
+    borderRadius: BORDER_RADIUS.medium,
+    borderColor: COLORS.border,
     borderWidth: 1,
-    padding: 16,
-    marginBottom: 12,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
   },
   adviceHeader: {
-    marginBottom: 12,
+    marginBottom: SPACING.md,
   },
   categoryBadge: {
-    backgroundColor: '#1a3a32',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 6,
+    backgroundColor: `${COLORS.teal}15`,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.small,
     alignSelf: 'flex-start',
   },
   categoryText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#48D2B4',
+    color: COLORS.teal,
   },
   recommendation: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#ffffff',
-    marginBottom: 8,
+    color: COLORS.ink,
+    marginBottom: SPACING.sm,
   },
   reasonContainer: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 8,
+    gap: SPACING.sm,
   },
   reason: {
     fontSize: 12,
-    color: '#999999',
+    color: COLORS.textSecondary,
     flex: 1,
   },
   summaryCard: {
-    backgroundColor: '#1a3a32',
-    borderRadius: 8,
-    borderColor: '#48D2B4',
+    backgroundColor: `${COLORS.teal}10`,
+    borderRadius: BORDER_RADIUS.medium,
+    borderColor: COLORS.teal,
     borderWidth: 1,
-    padding: 16,
-    marginBottom: 24,
+    padding: SPACING.lg,
+    marginBottom: SPACING.xl,
   },
   summaryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 12,
+    gap: SPACING.md,
+    marginBottom: SPACING.md,
   },
   summaryTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#48D2B4',
+    color: COLORS.teal,
   },
   summaryText: {
     fontSize: 13,
-    color: '#cccccc',
+    color: COLORS.textSecondary,
     lineHeight: 20,
-    marginBottom: 16,
-  },
-  exportButton: {
-    backgroundColor: '#48D2B4',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 6,
-    gap: 8,
-  },
-  exportButtonText: {
-    color: '#111111',
-    fontSize: 13,
-    fontWeight: '600',
   },
   bottomButtons: {
-    marginBottom: 20,
+    marginBottom: SPACING.xl,
   },
   button: {
-    backgroundColor: '#1a1a1a',
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: COLORS.card,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.medium,
     alignItems: 'center',
-    borderColor: '#48D2B4',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    borderColor: COLORS.teal,
     borderWidth: 1,
+    gap: SPACING.sm,
   },
   buttonText: {
-    color: '#48D2B4',
+    color: COLORS.teal,
     fontSize: 14,
     fontWeight: '600',
   },

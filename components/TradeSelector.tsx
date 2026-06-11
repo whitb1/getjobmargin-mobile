@@ -1,5 +1,7 @@
 import React from 'react';
 import { StyleSheet, View, Text, ScrollView, Pressable } from 'react-native';
+import { COLORS, BORDER_RADIUS, SPACING } from '@/lib/theme';
+import { TRADE_LABELS } from '@/lib/calculator';
 
 interface TradeSelectorProps {
   trades: string[];
@@ -37,45 +39,57 @@ export default function TradeSelector({ trades, selectedTrade, onSelectTrade }: 
           </Pressable>
         ))}
       </ScrollView>
+      {selectedTrade && (
+        <Text style={styles.tradeLabel}>
+          {TRADE_LABELS[selectedTrade as keyof typeof TRADE_LABELS]}
+        </Text>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 20,
+    marginBottom: SPACING.xl,
   },
   label: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#cccccc',
-    marginBottom: 8,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
   },
   scrollView: {
-    marginHorizontal: -16,
-    paddingHorizontal: 16,
+    marginHorizontal: -SPACING.lg,
+    paddingHorizontal: SPACING.lg,
   },
   scrollContent: {
-    gap: 8,
+    gap: SPACING.sm,
   },
   tradeButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    backgroundColor: '#1a1a1a',
-    borderColor: '#333333',
+    paddingHorizontal: SPACING.lg,
+    paddingVertical: SPACING.sm,
+    borderRadius: BORDER_RADIUS.medium,
+    backgroundColor: COLORS.card,
+    borderColor: COLORS.border,
     borderWidth: 1,
   },
   tradeButtonActive: {
-    backgroundColor: '#48D2B4',
-    borderColor: '#48D2B4',
+    backgroundColor: COLORS.teal,
+    borderColor: COLORS.teal,
   },
   tradeText: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#999999',
+    color: COLORS.textSecondary,
   },
   tradeTextActive: {
-    color: '#111111',
+    color: COLORS.bg,
+  },
+  tradeLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textTertiary,
+    marginTop: SPACING.sm,
+    fontStyle: 'italic',
   },
 });

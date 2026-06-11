@@ -1,13 +1,20 @@
 import React from 'react';
 import { StyleSheet, View, Text, TextInput } from 'react-native';
+import { COLORS, BORDER_RADIUS, SPACING } from '@/lib/theme';
 
 interface CostInputProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
+  keyboardType?: 'decimal-pad' | 'numeric';
 }
 
-export default function CostInput({ label, value, onChange }: CostInputProps) {
+export default function CostInput({
+  label,
+  value,
+  onChange,
+  keyboardType = 'decimal-pad',
+}: CostInputProps) {
   const isPercentage = label.includes('%');
 
   return (
@@ -18,10 +25,10 @@ export default function CostInput({ label, value, onChange }: CostInputProps) {
         <TextInput
           style={styles.input}
           placeholder="0"
-          placeholderTextColor="#666666"
+          placeholderTextColor={COLORS.textTertiary}
           value={value}
           onChangeText={onChange}
-          keyboardType="decimal-pad"
+          keyboardType={keyboardType}
         />
         {isPercentage && <Text style={styles.suffix}>%</Text>}
       </View>
@@ -31,39 +38,39 @@ export default function CostInput({ label, value, onChange }: CostInputProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 12,
+    marginBottom: SPACING.md,
   },
   label: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#cccccc',
-    marginBottom: 6,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
   },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    borderColor: '#333333',
+    backgroundColor: COLORS.card,
+    borderColor: COLORS.border,
     borderWidth: 1,
-    borderRadius: 6,
-    paddingHorizontal: 12,
+    borderRadius: BORDER_RADIUS.small,
+    paddingHorizontal: SPACING.md,
   },
   prefix: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#48D2B4',
-    marginRight: 4,
+    color: COLORS.teal,
+    marginRight: SPACING.xs,
   },
   input: {
     flex: 1,
-    paddingVertical: 10,
-    color: '#ffffff',
+    paddingVertical: SPACING.sm,
+    color: COLORS.ink,
     fontSize: 13,
   },
   suffix: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#48D2B4',
-    marginLeft: 4,
+    color: COLORS.teal,
+    marginLeft: SPACING.xs,
   },
 });

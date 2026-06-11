@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
+import { COLORS, BORDER_RADIUS, SPACING } from '@/lib/theme';
 import { calculateMargin } from '@/lib/calculator';
 
 interface ResultsDisplayProps {
@@ -9,7 +10,8 @@ interface ResultsDisplayProps {
   subcontractor: number;
   equipment: number;
   salesCommission: number;
-  ownerTime: number;
+  ownerHours: number;
+  ownerHourlyRate: number;
   overheadPercent: number;
   targetMarginPercent: number;
 }
@@ -21,7 +23,8 @@ export default function ResultsDisplay({
   subcontractor,
   equipment,
   salesCommission,
-  ownerTime,
+  ownerHours,
+  ownerHourlyRate,
   overheadPercent,
   targetMarginPercent,
 }: ResultsDisplayProps) {
@@ -31,80 +34,74 @@ export default function ResultsDisplay({
     subcontractor,
     equipment,
     salesCommission,
-    ownerTime,
+    ownerHours,
+    ownerHourlyRate,
   };
 
   const result = calculateMargin(costs, overheadPercent, targetMarginPercent);
+  const alertColor =
+    result.alertLevel === 'danger' ? COLORS.danger :
+    result.alertLevel === 'warning' ? COLORS.warning :
+    COLORS.success;
+
+  const maxCost = Math.max(...result.costBreakdown.map((item) => item.amount));
+  const maxBarWidth = 200; // pixels
 
   return (
     <View style={styles.container}>
-      <View style={styles.resultCard}>
-        <Text style={styles.cardTitle}>Direct Costs</Text>
-        <View style={styles.costBreakdown}>
-          {materials > 0 && (
-            <View style={styles.costItem}>
-              <Text style={styles.costLabel}>Materials</Text>
-              <Text style={styles.costValue}>${materials.toFixed(2)}</Text>
-            </View>
-          )}
-          {labor > 0 && (
-            <View style={styles.costItem}>
-              <Text style={styles.costLabel}>Labor</Text>
-              <Text style={styles.costValue}>${labor.toFixed(2)}</Text>
-            </View>
-          )}
-          {subcontractor > 0 && (
-            <View style={styles.costItem}>
-              <Text style={styles.costLabel}>Subcontractor</Text>
-              <Text style={styles.costValue}>${subcontractor.toFixed(2)}</Text>
-            </View>
-          )}
-          {equipment > 0 && (
-            <View style={styles.costItem}>
-              <Text style={styles.costLabel}>Equipment</Text>
-              <Text style={styles.costValue}>${equipment.toFixed(2)}</Text>
-            </View>
-          )}
-          {salesCommission > 0 && (
-            <View style={styles.costItem}>
-              <Text style={styles.costLabel}>Sales Commission</Text>
-              <Text style={styles.costValue}>${salesCommission.toFixed(2)}</Text>
-            </View>
-          )}
-          {ownerTime > 0 && (
-            <View style={styles.costItem}>
-              <Text style={styles.costLabel}>Owner Time</Text>
-              <Text style={styles.costValue}>${ownerTime.toFixed(2)}</Text>
-            </View>
-          )}
-        </View>
-        <View style={styles.divider} />
-        <View style={styles.costItem}>
-          <Text style={styles.costLabel}>Total Direct Cost</Text>
-          <Text style={styles.costValueLarge}>${result.directCost.toFixed(2)}</Text>
+      {/* Alert Banner */}
+      <View style={[styles.alertBanner, { backgroundColor: `${alertColor}15` }]}>
+        <View style={[styles.alertDot, { backgroundColor: alertColor }]} />
+        <View style={styles.alertContent}>
+          <Text style={[styles.alertTitle, { color: alertColor }]}>
+            {result.alertLevel === 'danger' ? '⚠️ Low Margin' :
+             result.alertLevel === 'warning' ? '⚠️ Moderate Margin' :
+             '✓ Healthy Margin'}
+          </Text>
+          <Text style={styles.alertMessage}>
+            {result.marginPercent.toFixed(1)}% margin
+          </Text>
         </View>
       </View>
 
+      {/* Main Results Card */}
       <View style={styles.resultCard}>
-        <Text style={styles.cardTitle}>Pricing & Profit</Text>
-        <View style={styles.costItem}>
-          <Text style={styles.costLabel}>Total with Overhead ({overheadPercent}%)</Text>
-          <Text style={styles.costValue}>${result.totalWithOverhead.toFixed(2)}</Text>
-        </View>
-        <View style={styles.costItem}>
-          <Text style={styles.costLabel}>Recommended Price ({targetMarginPercent}% margin)</Text>
-          <Text style={[styles.costValue, styles.recommended]}>
-            ${result.recommendedPrice.toFixed(2)}
-          </Text>
+        <View style={styles.priceSection}>
+          <Text style={styles.priceLabel}>Direct Cost</Text>
+          <Text style={styles.priceValue}>${result.directCost.toFixed(2)}</Text>
+          <View style={styles.spacer} />
+          <Text style={styles.priceLabel}>+ Overhead</Text>
+          <Text style={styles.priceValue}>${result.overheadAmount.toFixed(2)}</Text>
+          <View style={styles.spacer} />
+          <Text style={styles.priceLabel}>= Total Cost</Text>
+          <Text style={styles.priceValue}>${result.totalWithOverhead.toFixed(2)}</Text>
         </View>
         <View style={styles.divider} />
-        <View style={styles.costItem}>
-          <Text style={styles.costLabel}>Gross Profit</Text>
-          <Text style={styles.profitValue}>${result.grossProfit.toFixed(2)}</Text>
+        <View style={styles.recommendedSection}>
+          <Text style={styles.recommendedLabel}>Recommended Price</Text>
+          <Text style={styles.recommendedPrice}>${result.recommendedPrice.toFixed(2)}</Text>
+          <Text style={styles.profitText}>Gross Profit: ${result.grossProfit.toFixed(2)}</Text>
         </View>
-        <View style={styles.costItem}>
-          <Text style={styles.costLabel}>Profit Margin %</Text>
-          <Text style={styles.profitValue}>{result.marginPercent.toFixed(1)}%</Text>
+      </View>
+
+      {/* Cost Breakdown Chart */}
+      <View style={styles.breakdownCard}>
+        <Text style={styles.breakdownTitle}>Cost Breakdown</Text>
+        <View style={styles.chartContainer}>
+          {result.costBreakdown.map((item, index) => (
+            <View key={index} style={styles.chartItem}>
+              <Text style={styles.chartLabel}>{item.label}</Text>
+              <View style={styles.barContainer}>
+                <View
+                  style={[
+                    styles.bar,
+                    { width: `${(item.amount / maxCost) * 100}%` },
+                  ]}
+                />
+              </View>
+              <Text style={styles.chartValue}>${item.amount.toFixed(0)} ({item.percent.toFixed(0)}%)</Text>
+            </View>
+          ))}
         </View>
       </View>
     </View>
@@ -113,56 +110,117 @@ export default function ResultsDisplay({
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 20,
+    marginBottom: SPACING.xl,
+  },
+  alertBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.md,
+    borderRadius: BORDER_RADIUS.medium,
+    marginBottom: SPACING.md,
+  },
+  alertDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: SPACING.md,
+  },
+  alertContent: {
+    flex: 1,
+  },
+  alertTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  alertMessage: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   resultCard: {
-    backgroundColor: '#1a1a1a',
-    borderColor: '#48D2B4',
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 16,
-    marginBottom: 12,
+    backgroundColor: COLORS.card,
+    borderColor: COLORS.teal,
+    borderWidth: 2,
+    borderRadius: BORDER_RADIUS.large,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
   },
-  cardTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#48D2B4',
-    marginBottom: 12,
+  priceSection: {
+    gap: SPACING.md,
   },
-  costBreakdown: {
-    gap: 8,
+  priceLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
   },
-  costItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  costLabel: {
-    fontSize: 13,
-    color: '#cccccc',
-  },
-  costValue: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-  costValueLarge: {
-    fontSize: 16,
+  priceValue: {
+    fontSize: 20,
     fontWeight: '700',
-    color: '#48D2B4',
+    color: COLORS.ink,
   },
-  recommended: {
-    color: '#48D2B4',
-    fontSize: 15,
-  },
-  profitValue: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#48D2B4',
+  spacer: {
+    height: SPACING.sm,
   },
   divider: {
     height: 1,
-    backgroundColor: '#333333',
-    marginVertical: 8,
+    backgroundColor: COLORS.border,
+    marginVertical: SPACING.md,
+  },
+  recommendedSection: {
+    alignItems: 'center',
+  },
+  recommendedLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+  recommendedPrice: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: COLORS.teal,
+    marginVertical: SPACING.sm,
+  },
+  profitText: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+  },
+  breakdownCard: {
+    backgroundColor: COLORS.card,
+    borderColor: COLORS.border,
+    borderWidth: 1,
+    borderRadius: BORDER_RADIUS.medium,
+    padding: SPACING.lg,
+  },
+  breakdownTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: COLORS.ink,
+    marginBottom: SPACING.md,
+  },
+  chartContainer: {
+    gap: SPACING.md,
+  },
+  chartItem: {
+    gap: SPACING.sm,
+  },
+  chartLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: COLORS.textSecondary,
+  },
+  barContainer: {
+    height: 24,
+    backgroundColor: COLORS.bg,
+    borderRadius: BORDER_RADIUS.small,
+    overflow: 'hidden',
+  },
+  bar: {
+    height: '100%',
+    backgroundColor: COLORS.teal,
+  },
+  chartValue: {
+    fontSize: 11,
+    color: COLORS.textTertiary,
   },
 });

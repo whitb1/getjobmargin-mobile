@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { PaywallProvider } from '@/lib/paywall';
+import { COLORS } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -16,7 +17,7 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: '#111111' },
+          contentStyle: { backgroundColor: COLORS.bg },
         }}
       >
         <Stack.Screen name="(tabs)" />

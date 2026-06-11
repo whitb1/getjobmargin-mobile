@@ -1,162 +1,172 @@
 import React from 'react';
-import { StyleSheet, ScrollView, View, Text, FlatList, Pressable, useWindowDimensions } from 'react-native';
-import { useState, useEffect } from 'react';
-import { Ionicons } from '@expo/vector-icons';
-import * as SecureStore from 'expo-secure-store';
+import { StyleSheet, View, Text, ScrollView, SafeAreaView } from 'react-native';
+import { COLORS, BORDER_RADIUS, SPACING } from '@/lib/theme';
 
-interface SavedJob {
-  id: string;
-  trade: string;
-  date: string;
-  directCost: number;
-  totalWithOverhead: number;
-  recommendedPrice: number;
-  grossProfit: number;
-}
+const DemoJobs = [
+  {
+    id: '1',
+    name: 'Smith Roof Replacement',
+    trade: 'Roofing',
+    directCost: 3500,
+    recommendedPrice: 5250,
+    marginPercent: 33.3,
+  },
+  {
+    id: '2',
+    name: 'Johnson AC Unit Install',
+    trade: 'HVAC',
+    directCost: 2800,
+    recommendedPrice: 3920,
+    marginPercent: 28.6,
+  },
+  {
+    id: '3',
+    name: 'Davis Plumbing Repair',
+    trade: 'Plumbing',
+    directCost: 450,
+    recommendedPrice: 630,
+    marginPercent: 28.6,
+  },
+];
 
 export default function JobsScreen() {
-  const [jobs, setJobs] = useState<SavedJob[]>([]);
-  const [loading, setLoading] = useState(true);
-  const windowHeight = useWindowDimensions().height;
-
-  useEffect(() => {
-    loadJobs();
-  }, []);
-
-  const loadJobs = async () => {
-    try {
-      const jobsData = await SecureStore.getItemAsync('saved_jobs');
-      if (jobsData) {
-        setJobs(JSON.parse(jobsData));
-      }
-    } catch (error) {
-      console.error('Failed to load jobs:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const deleteJob = async (id: string) => {
-    const updated = jobs.filter(j => j.id !== id);
-    setJobs(updated);
-    await SecureStore.setItemAsync('saved_jobs', JSON.stringify(updated));
-  };
-
-  const renderJobCard = ({ item }: { item: SavedJob }) => (
-    <View style={styles.jobCard}>
-      <View style={styles.jobHeader}>
-        <View>
-          <Text style={styles.jobTitle}>{item.trade}</Text>
-          <Text style={styles.jobDate}>{item.date}</Text>
-        </View>
-        <Pressable onPress={() => deleteJob(item.id)}>
-          <Ionicons name="trash" size={20} color="#ff6b6b" />
-        </Pressable>
-      </View>
-      <View style={styles.jobStats}>
-        <View style={styles.stat}>
-          <Text style={styles.statLabel}>Direct Cost</Text>
-          <Text style={styles.statValue}>${item.directCost.toFixed(2)}</Text>
-        </View>
-        <View style={styles.stat}>
-          <Text style={styles.statLabel}>Recommended Price</Text>
-          <Text style={styles.statValue}>${item.recommendedPrice.toFixed(2)}</Text>
-        </View>
-        <View style={styles.stat}>
-          <Text style={styles.statLabel}>Gross Profit</Text>
-          <Text style={styles.statValue}>${item.grossProfit.toFixed(2)}</Text>
-        </View>
-      </View>
-    </View>
-  );
-
-  if (loading) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', height: windowHeight }]}>
-        <Text style={styles.emptyText}>Loading jobs...</Text>
-      </View>
-    );
-  }
-
-  if (jobs.length === 0) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center', alignItems: 'center', height: windowHeight }]}>
-        <Ionicons name="briefcase" size={48} color="#48D2B4" />
-        <Text style={styles.emptyText}>No saved jobs yet</Text>
-        <Text style={styles.emptySubtext}>Create your first job calculation</Text>
-      </View>
-    );
-  }
-
   return (
-    <FlatList
-      data={jobs}
-      renderItem={renderJobCard}
-      keyExtractor={item => item.id}
-      contentContainerStyle={styles.listContent}
-      style={styles.container}
-    />
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={styles.content}>
+        {DemoJobs.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyTitle}>No Jobs Yet</Text>
+            <Text style={styles.emptyMessage}>Create and save your first job to get started</Text>
+          </View>
+        ) : (
+          <View style={styles.jobsList}>
+            {DemoJobs.map((job) => (
+              <View key={job.id} style={styles.jobCard}>
+                <View style={styles.jobHeader}>
+                  <View>
+                    <Text style={styles.jobName}>{job.name}</Text>
+                    <Text style={styles.jobTrade}>{job.trade}</Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.marginBadge,
+                      {
+                        backgroundColor:
+                          job.marginPercent >= 35 ? `${COLORS.success}15` :
+                          job.marginPercent >= 25 ? `${COLORS.warning}15` :
+                          `${COLORS.danger}15`,
+                      },
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.marginText,
+                        {
+                          color:
+                            job.marginPercent >= 35 ? COLORS.success :
+                            job.marginPercent >= 25 ? COLORS.warning :
+                            COLORS.danger,
+                        },
+                      ]}
+                    >
+                      {job.marginPercent.toFixed(1)}%
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.jobDetails}>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Cost</Text>
+                    <Text style={styles.detailValue}>${job.directCost.toFixed(0)}</Text>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Price</Text>
+                    <Text style={[styles.detailValue, { color: COLORS.teal }]}>${job.recommendedPrice.toFixed(0)}</Text>
+                  </View>
+                </View>
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111111',
+    backgroundColor: COLORS.bg,
   },
-  listContent: {
-    padding: 16,
+  content: {
+    padding: SPACING.lg,
+  },
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 80,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: COLORS.ink,
+    marginBottom: SPACING.md,
+  },
+  emptyMessage: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+  },
+  jobsList: {
+    gap: SPACING.md,
   },
   jobCard: {
-    backgroundColor: '#1a1a1a',
-    borderRadius: 8,
-    borderColor: '#333333',
+    backgroundColor: COLORS.card,
+    borderColor: COLORS.border,
     borderWidth: 1,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: BORDER_RADIUS.medium,
+    padding: SPACING.lg,
   },
   jobHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 12,
+    alignItems: 'flex-start',
+    marginBottom: SPACING.md,
   },
-  jobTitle: {
+  jobName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#48D2B4',
+    color: COLORS.ink,
   },
-  jobDate: {
+  jobTrade: {
     fontSize: 12,
-    color: '#999999',
-    marginTop: 4,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.xs,
   },
-  jobStats: {
+  marginBadge: {
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.small,
+  },
+  marginText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  jobDetails: {
     flexDirection: 'row',
     justifyContent: 'space-around',
   },
-  stat: {
+  detailItem: {
     alignItems: 'center',
   },
-  statLabel: {
+  detailLabel: {
     fontSize: 12,
-    color: '#999999',
-    marginBottom: 4,
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.xs,
   },
-  statValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#ffffff',
-  },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#cccccc',
-    marginTop: 12,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    color: '#999999',
-    marginTop: 8,
+  detailValue: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.ink,
   },
 });

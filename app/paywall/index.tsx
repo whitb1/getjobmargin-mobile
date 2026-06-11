@@ -1,23 +1,41 @@
 import React from 'react';
-import { StyleSheet, ScrollView, View, Text, Pressable, SafeAreaView } from 'react-native';
+import { StyleSheet, ScrollView, View, Text, Pressable, SafeAreaView, Linking } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { usePaywall } from '@/lib/paywall';
+import { COLORS, BORDER_RADIUS, SPACING } from '@/lib/theme';
 
-const MONTHLY_LINK = 'plink_1TbVV4PpWuYRuNqjfUXxJ2zR';
-const ANNUAL_LINK = 'plink_1TbVbFPpWuYRuNqjs4v8NVNc';
+const MONTHLY_LINK = 'https://buy.stripe.com/test/5kA14jbU87Ed6Pe144' ; // plink_1TbVV4PpWuYRuNqjfUXxJ2zR
+const ANNUAL_LINK = 'https://buy.stripe.com/test/7sI6pu6Mo8Ef8Ra289'; // plink_1TbVbFPpWuYRuNqjs4v8NVNc
 
 export default function PaywallScreen() {
   const router = useRouter();
+  const { setPurchased } = usePaywall();
   const [selectedPlan, setSelectedPlan] = useState<'monthly' | 'annual' | null>(null);
+  const [isOpening, setIsOpening] = useState(false);
 
-  const handlePurchase = (plan: 'monthly' | 'annual') => {
+  const handlePurchase = async (plan: 'monthly' | 'annual') => {
     setSelectedPlan(plan);
-    // In production, integrate with Stripe using @stripe/stripe-react-native
-    // For now, simulate purchase
-    setTimeout(() => {
-      router.back();
-    }, 1500);
+    setIsOpening(true);
+
+    const url = plan === 'monthly' ? MONTHLY_LINK : ANNUAL_LINK;
+    try {
+      const canOpen = await Linking.canOpenURL(url);
+      if (canOpen) {
+        await Linking.openURL(url);
+        // After returning from Stripe, simulate purchase
+        setTimeout(() => {
+          setPurchased(plan);
+          router.back();
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Failed to open Stripe:', error);
+      alert('Could not open payment page. Please try again.');
+    } finally {
+      setIsOpening(false);
+    }
   };
 
   const features = [
@@ -26,7 +44,7 @@ export default function PaywallScreen() {
     'Advanced cost analysis',
     'Multiple job comparisons',
     'Export reports',
-    'Offline access',
+    'Unlimited job saves',
   ];
 
   return (
@@ -34,11 +52,11 @@ export default function PaywallScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {/* Header */}
         <Pressable onPress={() => router.back()} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="#ffffff" />
+          <Ionicons name="close" size={24} color={COLORS.ink} />
         </Pressable>
 
         <View style={styles.header}>
-          <Ionicons name="star" size={48} color="#48D2B4" />
+          <Ionicons name="star" size={48} color={COLORS.teal} />
           <Text style={styles.title}>Unlock Premium Features</Text>
           <Text style={styles.subtitle}>Access AI Margin Advisor & advanced tools</Text>
         </View>
@@ -48,7 +66,7 @@ export default function PaywallScreen() {
           <Text style={styles.featuresTitle}>What You Get:</Text>
           {features.map((feature, index) => (
             <View key={index} style={styles.feature}>
-              <Ionicons name="checkmark-circle" size={20} color="#48D2B4" />
+              <Ionicons name="checkmark-circle" size={20} color={COLORS.teal} />
               <Text style={styles.featureText}>{feature}</Text>
             </View>
           ))}
@@ -65,6 +83,7 @@ export default function PaywallScreen() {
               selectedPlan === 'monthly' && styles.planCardSelected,
             ]}
             onPress={() => handlePurchase('monthly')}
+            disabled={isOpening}
           >
             <Text style={styles.planName}>Monthly</Text>
             <Text style={styles.planPrice}>$19</Text>
@@ -81,6 +100,7 @@ export default function PaywallScreen() {
               selectedPlan === 'annual' && styles.planCardSelected,
             ]}
             onPress={() => handlePurchase('annual')}
+            disabled={isOpening}
           >
             <View style={styles.bestBadge}>
               <Text style={styles.bestBadgeText}>BEST VALUE</Text>
@@ -119,10 +139,10 @@ export default function PaywallScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#111111',
+    backgroundColor: COLORS.bg,
   },
   content: {
-    padding: 16,
+    padding: SPACING.lg,
   },
   closeButton: {
     alignSelf: 'flex-end',
@@ -133,137 +153,137 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: SPACING.xxl,
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#ffffff',
-    marginTop: 12,
+    color: COLORS.ink,
+    marginTop: SPACING.md,
   },
   subtitle: {
     fontSize: 14,
-    color: '#999999',
-    marginTop: 8,
+    color: COLORS.textSecondary,
+    marginTop: SPACING.sm,
     textAlign: 'center',
   },
   featuresSection: {
-    marginBottom: 32,
+    marginBottom: SPACING.xxl,
   },
   featuresTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#48D2B4',
-    marginBottom: 12,
+    color: COLORS.teal,
+    marginBottom: SPACING.md,
   },
   feature: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: SPACING.md,
   },
   featureText: {
     fontSize: 14,
-    color: '#cccccc',
-    marginLeft: 12,
+    color: COLORS.textSecondary,
+    marginLeft: SPACING.md,
     flex: 1,
   },
   plansSection: {
-    marginBottom: 32,
+    marginBottom: SPACING.xxl,
   },
   plansTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#cccccc',
-    marginBottom: 16,
+    color: COLORS.ink,
+    marginBottom: SPACING.lg,
   },
   planCard: {
-    backgroundColor: '#1a1a1a',
-    borderColor: '#333333',
+    backgroundColor: COLORS.card,
+    borderColor: COLORS.border,
     borderWidth: 1,
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 12,
+    borderRadius: BORDER_RADIUS.large,
+    padding: SPACING.lg,
+    marginBottom: SPACING.md,
     position: 'relative',
   },
   planCardBest: {
-    borderColor: '#48D2B4',
+    borderColor: COLORS.teal,
     borderWidth: 2,
   },
   planCardSelected: {
-    backgroundColor: '#1a3a32',
-    borderColor: '#48D2B4',
+    backgroundColor: `${COLORS.teal}10`,
+    borderColor: COLORS.teal,
   },
   bestBadge: {
     position: 'absolute',
     top: -12,
     right: 16,
-    backgroundColor: '#48D2B4',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 4,
+    backgroundColor: COLORS.teal,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.xs,
+    borderRadius: BORDER_RADIUS.small,
   },
   bestBadgeText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#111111',
+    color: COLORS.bg,
   },
   planName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
+    color: COLORS.ink,
   },
   planPrice: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#48D2B4',
-    marginTop: 8,
+    color: COLORS.teal,
+    marginTop: SPACING.sm,
   },
   planBilling: {
     fontSize: 12,
-    color: '#999999',
+    color: COLORS.textSecondary,
   },
   savings: {
     fontSize: 12,
-    color: '#48D2B4',
-    marginTop: 4,
+    color: COLORS.teal,
+    marginTop: SPACING.xs,
     fontWeight: '600',
   },
   planDivider: {
     height: 1,
-    backgroundColor: '#333333',
-    marginVertical: 12,
+    backgroundColor: COLORS.border,
+    marginVertical: SPACING.md,
   },
   planValue: {
     fontSize: 12,
-    color: '#cccccc',
+    color: COLORS.textSecondary,
     textAlign: 'center',
   },
   faqSection: {
-    marginBottom: 32,
+    marginBottom: SPACING.xxl,
   },
   faqTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#cccccc',
-    marginBottom: 12,
+    color: COLORS.ink,
+    marginBottom: SPACING.md,
   },
   faqItem: {
-    marginBottom: 16,
+    marginBottom: SPACING.lg,
   },
   faqQuestion: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#48D2B4',
-    marginBottom: 4,
+    color: COLORS.teal,
+    marginBottom: SPACING.xs,
   },
   faqAnswer: {
     fontSize: 13,
-    color: '#999999',
+    color: COLORS.textSecondary,
   },
   footer: {
     fontSize: 11,
-    color: '#666666',
+    color: COLORS.textTertiary,
     textAlign: 'center',
-    paddingVertical: 12,
+    paddingVertical: SPACING.md,
   },
 });
